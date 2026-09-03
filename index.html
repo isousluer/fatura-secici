@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fatura &amp; Tahsilat Seçici</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root{--bg:#0f1117;--surface:#181c27;--surface2:#1e2335;--border:#2a3050;--accent:#4f8ef7;--accent2:#f7a84f;--danger:#f74f4f;--success:#4ff79a;--text:#dde3f5;--text-dim:#6b7599;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;gap:16px;}
+.logo-mark{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:14px;color:#fff;flex-shrink:0;}
+header h1{font-size:16px;font-weight:600;}
+header span{font-size:12px;color:var(--text-dim);font-family:var(--mono);}
+
+.stats-bar{display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 32px;gap:24px;flex-wrap:wrap;align-items:center;}
+.stats-bar.visible{display:flex;}
+.stat{display:flex;gap:8px;align-items:baseline;}
+.stat-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);}
+.stat-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;}
+.stat.hi .stat-val{color:var(--accent2);}
+.stat.red .stat-val{color:var(--danger);}
+.sep{color:var(--border);}
+
+.tabs{display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;}
+.tabs.visible{display:flex;}
+.tab-btn{padding:12px 20px;border:none;background:transparent;color:var(--text-dim);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+main{flex:1;display:flex;flex-direction:column;padding:32px;gap:20px;}
+
+.landing{display:flex;flex-direction:column;align-items:center;gap:20px;padding:48px 32px;}
+.landing h2{font-size:20px;font-weight:600;}
+.landing p{font-size:13px;color:var(--text-dim);max-width:420px;text-align:center;}
+.landing-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:560px;}
+@media(max-width:600px){.landing-cards{grid-template-columns:1fr;}}
+.landing-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;transition:all .2s;text-align:center;}
+.landing-card:hover{border-color:var(--accent);background:rgba(79,142,247,.04);transform:translateY(-2px);}
+.landing-card .card-icon{font-size:36px;}
+.landing-card h3{font-size:15px;font-weight:600;}
+.landing-card p{font-size:12px;color:var(--text-dim);}
+
+.merge-panel{display:none;flex-direction:column;gap:16px;}
+.merge-panel.visible{display:flex;}
+.merge-header{display:flex;align-items:center;gap:12px;}
+.merge-header h3{font-size:15px;font-weight:600;flex:1;}
+.merge-dropzone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.merge-dropzone:hover,.merge-dropzone.drag-over{border-color:var(--accent);background:rgba(79,142,247,.04);}
+.merge-dropzone p{font-size:13px;color:var(--text-dim);}
+.merge-file-list{display:flex;flex-direction:column;gap:8px;}
+.merge-file-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;font-size:13px;}
+.merge-file-name{flex:1;font-family:var(--mono);font-size:12px;}
+.merge-file-info{font-size:11px;color:var(--text-dim);}
+.merge-file-remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:0 4px;}
+.merge-summary{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;gap:24px;flex-wrap:wrap;}
+
+.btn{padding:8px 20px;border-radius:8px;border:none;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#3a7de8;}
+.btn-success{background:var(--success);color:#0f1117;}
+.btn-success:hover{background:#3de08a;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+.toolbar{display:none;gap:12px;align-items:center;flex-wrap:wrap;}
+.toolbar.visible{display:flex;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 36px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--text-dim);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:14px;pointer-events:none;}
+select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;}
+select:focus{border-color:var(--accent);}
+.toolbar-right{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap;}
+
+.compare-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;gap:20px;flex-direction:column;}
+.compare-panel.visible{display:flex;}
+.compare-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.compare-header h3{font-size:14px;font-weight:600;flex:1;}
+.compare-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.compare-body{grid-template-columns:1fr;}}
+.compare-col h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:8px;}
+.compare-textarea{width:100%;height:160px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;transition:border-color .2s;}
+.compare-textarea:focus{border-color:var(--accent);}
+.compare-results{display:flex;flex-direction:column;gap:10px;}
+.result-group{background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.result-group-header{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:13px;font-weight:500;}
+.result-group-header:hover{background:var(--surface2);}
+.result-count{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:4px;font-weight:600;}
+.count-missing{background:rgba(247,79,79,.15);color:var(--danger);}
+.count-extra{background:rgba(247,168,79,.15);color:var(--accent2);}
+.result-group-body{display:none;padding:0 14px 12px;}
+.result-group-body.open{display:block;}
+.result-list{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.result-list li{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;transition:opacity .15s;}
+.result-list li:hover{opacity:.75;}
+.li-missing{background:rgba(247,79,79,.1);color:var(--danger);border:1px solid rgba(247,79,79,.2);}
+.li-extra{background:rgba(247,168,79,.1);color:var(--accent2);border:1px solid rgba(247,168,79,.2);}
+.compare-tip{font-size:11px;color:var(--text-dim);}
+
+.table-wrap{display:none;overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+.table-wrap.visible{display:block;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--surface2);border-bottom:1px solid var(--border);}
+th{padding:12px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);white-space:nowrap;user-select:none;}
+th.sortable{cursor:pointer;}
+th.sortable:hover{color:var(--accent);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+tbody tr.selected-row{background:rgba(79,142,247,.08);}
+tbody tr.cancelled-row{opacity:.5;}
+tbody tr.edited-row{background:rgba(247,168,79,.07);outline:1px solid rgba(247,168,79,.3);}
+td{padding:11px 14px;vertical-align:middle;white-space:nowrap;}
+td.mono{font-family:var(--mono);font-size:12px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono);}
+.b-hh{background:rgba(79,142,247,.15);color:var(--accent);}
+.b-vadeli{background:rgba(247,168,79,.15);color:var(--accent2);}
+.b-active{background:rgba(79,247,154,.12);color:var(--success);}
+.b-cancelled{background:rgba(247,79,79,.12);color:var(--danger);}
+.b-efatura{background:rgba(79,247,154,.08);color:var(--success);font-size:10px;}
+.b-earsiv{background:rgba(247,168,79,.12);color:var(--accent2);font-size:10px;}
+.b-vadetahhav{background:rgba(247,168,79,.15);color:var(--accent2);}
+.b-vadetah{background:rgba(79,142,247,.15);color:var(--accent);}
+.cb-cell{width:40px;text-align:center;}
+input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+.amount{text-align:right;font-family:var(--mono);font-size:12px;}
+.empty-state{text-align:center;padding:48px;color:var(--text-dim);font-size:14px;}
+
+.bottom-bar{display:none;position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:16px 32px;align-items:center;gap:16px;flex-wrap:wrap;}
+.bottom-bar.visible{display:flex;}
+.sel-info{flex:1;font-size:13px;color:var(--text-dim);}
+.sel-info strong{color:var(--accent2);font-family:var(--mono);}
+.sel-total{font-family:var(--mono);font-size:14px;font-weight:600;}
+
+.pagination{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.pagination button{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:var(--mono);transition:all .15s;}
+.pagination button:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.pagination button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pagination button:disabled{opacity:.3;cursor:not-allowed;}
+.page-info{font-size:12px;color:var(--text-dim);font-family:var(--mono);}
+
+.tab-content{display:none;}
+.tab-content.active{display:contents;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.modal-header h3{flex:1;font-size:15px;font-weight:600;}
+.modal-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:0 4px;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:20px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.modal-section h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:10px;}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:500px){.modal-grid{grid-template-columns:1fr;}}
+.modal-field{background:var(--bg);border-radius:8px;padding:10px 12px;}
+.modal-field label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);display:block;margin-bottom:3px;}
+.modal-field span{font-family:var(--mono);font-size:13px;}
+.modal-table{width:100%;border-collapse:collapse;font-size:12px;}
+.modal-table th{padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);border-bottom:1px solid var(--border);}
+.modal-table td{padding:8px 10px;border-bottom:1px solid var(--border);}
+.modal-table tr:last-child td{border-bottom:none;}
+.modal-table td.right{text-align:right;font-family:var(--mono);}
+
+/* CONFIRM */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;align-items:center;justify-content:center;padding:20px;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:440px;padding:28px;display:flex;flex-direction:column;gap:16px;}
+.confirm-box h3{font-size:16px;font-weight:600;}
+.confirm-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.confirm-stat{background:var(--bg);border-radius:8px;padding:12px;text-align:center;}
+.confirm-stat .val{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--accent);}
+.confirm-stat.hi .val{color:var(--accent2);}
+.confirm-stat .lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.confirm-note{font-size:12px;color:var(--text-dim);}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+/* SPLIT */
+.split-section{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+.split-section h5{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);}
+.split-row{display:flex;gap:8px;align-items:center;}
+.split-row input[type="number"]{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;min-width:0;}
+.split-row input[type="number"]:focus{border-color:var(--accent);}
+.split-row select{flex:1;min-width:0;}
+.split-row .btn-remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;}
+.split-total-info{font-size:12px;font-family:var(--mono);}
+.split-total-ok{color:var(--success);}
+.split-total-err{color:var(--danger);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">LT</div>
+  <div>
+    <h1>Fatura &amp; Tahsilat Seçici</h1>
+    <span>Logo Tiger JSON Aktarım Aracı</span>
+  </div>
+</header>
+
+<div class="stats-bar" id="statsBar">
+  <div class="stat"><span class="stat-val" id="sInvTotal">0</span><span class="stat-label">Fatura</span></div>
+  <div class="stat red"><span class="stat-val" id="sInvCancelled">0</span><span class="stat-label">İptal</span></div>
+  <div class="stat hi"><span class="stat-val" id="sInvSelected">0</span><span class="stat-label">Seçili</span></div>
+  <div class="sep">|</div>
+  <div class="stat"><span class="stat-val" id="sColTotal">0</span><span class="stat-label">Tahsilat</span></div>
+  <div class="stat hi"><span class="stat-val" id="sColSelected">0</span><span class="stat-label">Seçili</span></div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" onclick="switchTab('inv')">🧾 Faturalar</button>
+  <button class="tab-btn" onclick="switchTab('col')">💰 Tahsilatlar</button>
+</div>
+
+<main>
+  <!-- LANDING -->
+  <div class="landing" id="landing">
+    <div style="font-size:48px;opacity:.4">📂</div>
+    <h2>Ne yapmak istiyorsunuz?</h2>
+    <p>Tek bir dosyayı açıp fatura/tahsilat seçebilir ya da birden fazla dosyayı birleştirebilirsiniz.</p>
+    <div class="landing-cards">
+      <div class="landing-card" onclick="document.getElementById('fileInput').click()">
+        <div class="card-icon">🧾</div>
+        <h3>Dosya Aç</h3>
+        <p>Tek bir JSON dosyasını açıp fatura ve tahsilatları görüntüle, seç, indir</p>
+      </div>
+      <div class="landing-card" onclick="showMerge()">
+        <div class="card-icon">🔀</div>
+        <h3>Dosyaları Birleştir</h3>
+        <p>Birden fazla JSON dosyasını tek bir dosyada birleştir</p>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept=".json" style="display:none">
+  </div>
+
+  <!-- MERGE -->
+  <div class="merge-panel" id="mergePanel">
+    <div class="merge-header">
+      <h3>🔀 Dosyaları Birleştir</h3>
+      <button class="btn btn-ghost" onclick="hideMerge()">← Geri</button>
+    </div>
+    <div class="merge-dropzone" id="mergeDropzone">
+      <div style="font-size:32px">📂</div>
+      <p>JSON dosyalarını buraya sürükleyin</p>
+      <label for="mergeFileInput" class="btn btn-primary" style="cursor:pointer;margin-top:4px">📁 Dosya Seç (Çoklu)</label>
+      <input type="file" id="mergeFileInput" accept=".json" multiple style="display:none">
+    </div>
+    <div class="merge-file-list" id="mergeFileList"></div>
+    <div class="merge-summary" id="mergeSummary" style="display:none">
+      <div class="stat"><span class="stat-val" id="mFileCount">0</span><span class="stat-label">Dosya</span></div>
+      <div class="sep">|</div>
+      <div class="stat"><span class="stat-val" id="mInvCount">0</span><span class="stat-label">Fatura</span></div>
+      <div class="stat"><span class="stat-val" id="mColCount">0</span><span class="stat-label">Tahsilat</span></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="mergeFileName" placeholder="Dosya adı (opsiyonel)" style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;">
+      <span style="font-size:12px;color:var(--text-dim)">.json</span>
+      <button class="btn btn-ghost" onclick="mergeClear()">Temizle</button>
+      <button class="btn btn-success" id="mergeDownloadBtn" onclick="mergeDownload()" disabled>⬇ Birleştirilmiş JSON İndir</button>
+    </div>
+  </div>
+
+  <!-- FATURA SEKMESİ -->
+  <div id="invTab" class="tab-content active">
+    <div class="toolbar" id="invToolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="invSearch" placeholder="Fatura no, müşteri, yasal numara..." oninput="applyInv()">
+      </div>
+      <select id="invFStatus" onchange="applyInv()">
+        <option value="">Tüm Durumlar</option>
+        <option value="I">Aktif</option>
+        <option value="X">İptal</option>
+      </select>
+      <select id="invFType" onchange="applyInv()">
+        <option value="">Tüm Tipler</option>
+        <option value="HHSATIS">HH Satış</option>
+        <option value="VADELISATIS">Vadeli Satış</option>
+      </select>
+      <select id="invFPos" onchange="applyInv()">
+        <option value="">Tüm Bölgeler</option>
+      </select>
+      <div class="toolbar-right">
+        <button class="btn btn-ghost" onclick="invSelAll()">Tümünü Seç</button>
+        <button class="btn btn-ghost" onclick="invClearSel()">Seçimi Temizle</button>
+        <button class="btn btn-ghost" onclick="invToggleCompare()">⇄ Karşılaştır</button>
+        <button class="btn btn-ghost" onclick="resetApp()">↺ Yeni Dosya</button>
+      </div>
+    </div>
+    <div class="compare-panel" id="invCompare">
+      <div class="compare-header">
+        <h3>⇄ Fatura Listesi Karşılaştır</h3>
+        <span class="compare-tip">Her satıra bir fatura numarası</span>
+        <button class="btn btn-primary" onclick="runInvCompare()">Karşılaştır</button>
+        <button class="btn btn-ghost" onclick="invToggleCompare()">✕</button>
+      </div>
+      <div class="compare-body">
+        <div class="compare-col">
+          <h4>Listedeki Fatura Numaraları</h4>
+          <textarea class="compare-textarea" id="invCmpInput" placeholder="K222026000000670&#10;Z242026000001489&#10;..."></textarea>
+        </div>
+        <div class="compare-col">
+          <h4>Sonuç</h4>
+          <div class="compare-results" id="invCmpResults"><div style="color:var(--text-dim);font-size:13px;padding:12px 0">Listeyi yapıştırıp Karşılaştır butonuna tıklayın.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap" id="invTableWrap">
+      <table>
+        <thead><tr>
+          <th class="cb-cell"><input type="checkbox" id="invAllCb" onchange="invToggleAll(this)"></th>
+          <th class="sortable" onclick="invSort('LEGALNUMBER')">Yasal No ↕</th>
+          <th class="sortable" onclick="invSort('ISSUEDATE')">Tarih ↕</th>
+          <th>Müşteri</th><th>Bölge</th><th>Tip</th><th>Durum</th><th>Ödeme Tipi</th>
+          <th class="amount sortable" onclick="invSort('NETAMOUNT')">Net Tutar ↕</th>
+          <th class="amount">Açık Bakiye</th><th>Tür</th>
+        </tr></thead>
+        <tbody id="invBody"></tbody>
+      </table>
+      <div class="empty-state" id="invEmpty" style="display:none">Sonuç bulunamadı.</div>
+    </div>
+    <div class="pagination" id="invPag"></div>
+  </div>
+
+  <!-- TAHSİLAT SEKMESİ -->
+  <div id="colTab" class="tab-content">
+    <div class="toolbar" id="colToolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="colSearch" placeholder="Tahsilat kodu, müşteri, fatura no..." oninput="applyCol()">
+      </div>
+      <select id="colFPay" onchange="applyCol()">
+        <option value="">Tüm Ödeme Tipleri</option>
+        <option value="VADETAHHAV">Vadeli Tahsilat Havale</option>
+        <option value="VADETAH">Vadeli Tahsilat</option>
+      </select>
+      <select id="colFPos" onchange="applyCol()">
+        <option value="">Tüm Bölgeler</option>
+      </select>
+      <div class="toolbar-right">
+        <button class="btn btn-ghost" onclick="colSelAll()">Tümünü Seç</button>
+        <button class="btn btn-ghost" onclick="colClearSel()">Seçimi Temizle</button>
+        <button class="btn btn-ghost" onclick="colToggleCompare()">⇄ Karşılaştır</button>
+        <button class="btn btn-ghost" onclick="resetApp()">↺ Yeni Dosya</button>
+      </div>
+    </div>
+    <div class="compare-panel" id="colCompare">
+      <div class="compare-header">
+        <h3>⇄ Tahsilat Listesi Karşılaştır</h3>
+        <span class="compare-tip">Her satıra bir tahsilat kodu</span>
+        <button class="btn btn-primary" onclick="runColCompare()">Karşılaştır</button>
+        <button class="btn btn-ghost" onclick="colToggleCompare()">✕</button>
+      </div>
+      <div class="compare-body">
+        <div class="compare-col">
+          <h4>Listedeki Tahsilat Kodları</h4>
+          <textarea class="compare-textarea" id="colCmpInput" placeholder="3J125341835&#10;3J125305877&#10;..."></textarea>
+        </div>
+        <div class="compare-col">
+          <h4>Sonuç</h4>
+          <div class="compare-results" id="colCmpResults"><div style="color:var(--text-dim);font-size:13px;padding:12px 0">Listeyi yapıştırıp Karşılaştır butonuna tıklayın.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap" id="colTableWrap">
+      <table>
+        <thead><tr>
+          <th class="cb-cell"><input type="checkbox" id="colAllCb" onchange="colToggleAll(this)"></th>
+          <th class="sortable" onclick="colSort('CODE')">Tahsilat Kodu ↕</th>
+          <th class="sortable" onclick="colSort('ISSUEDATE')">Tarih ↕</th>
+          <th>Müşteri</th><th>Bölge</th><th>Ödeme Tipi</th><th>Bağlı Fatura</th>
+          <th class="amount sortable" onclick="colSort('AMOUNT')">Tutar ↕</th>
+        </tr></thead>
+        <tbody id="colBody"></tbody>
+      </table>
+      <div class="empty-state" id="colEmpty" style="display:none">Sonuç bulunamadı.</div>
+    </div>
+    <div class="pagination" id="colPag"></div>
+  </div>
+</main>
+
+<!-- BOTTOM BAR FATURA -->
+<div class="bottom-bar" id="invBar">
+  <div class="sel-info"><strong id="invSelCnt">0</strong> fatura seçili</div>
+  <span class="sel-total" id="invSelTot"></span>
+  <label style="font-size:13px;color:var(--text-dim);display:flex;gap:6px;align-items:center;cursor:pointer;">
+    <input type="checkbox" id="inclCol" checked> Tahsilatları dahil et
+  </label>
+  <button class="btn btn-success" id="invExpBtn" onclick="exportInv()" disabled>⬇ JSON İndir</button>
+</div>
+
+<!-- BOTTOM BAR TAHSİLAT -->
+<div class="bottom-bar" id="colBar">
+  <div class="sel-info"><strong id="colSelCnt">0</strong> tahsilat seçili</div>
+  <span class="sel-total" id="colSelTot"></span>
+  <button class="btn btn-success" id="colExpBtn" onclick="exportCol()">⬇ Tümünü İndir</button>
+</div>
+
+<!-- FATURA DETAY MODAL -->
+<div class="modal-overlay" id="invModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="invModalTitle">Fatura Detayı</h3>
+      <button class="modal-close" onclick="document.getElementById('invModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="invModalBody"></div>
+  </div>
+</div>
+
+<!-- TAHSİLAT DETAY MODAL -->
+<div class="modal-overlay" id="colModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="colModalTitle">Tahsilat Detayı</h3>
+      <button class="modal-close" onclick="document.getElementById('colModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="colModalBody"></div>
+  </div>
+</div>
+
+<!-- ONAY MODAL -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="confirm-box">
+    <h3 id="confirmTitle"></h3>
+    <div class="confirm-stats" id="confirmStats"></div>
+    <p class="confirm-note" id="confirmNote"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmOverlay').classList.remove('open')">İptal</button>
+      <button class="btn btn-success" id="confirmOk">⬇ İndir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== HELPERS =====
+const POSITION_NAMES = {
+  'D3JDR01': 'Bosna-Hersek',
+  'D3JDR02': 'Eski-Garaj',
+  'D3JDR03': 'Sanayi',
+  'D3JDR04': 'Mevlana',
+  'D3JDR05': 'Meram',
+  'D3JDR07': 'Sille',
+  'D3JDR09': 'Zafer',
+  'D3JDR11': 'Çumra',
+  'D3JDR13': 'Büsan',
+  'D3JDR14': 'Adliye',
+  'D3JDR15': 'Köyler',
+  'D3JDR16': 'Lalebahçe',
+  'D3JDR23': 'Çevreyolu',
+  'D3JDR24': 'Binkonut',
+  'D3JDR27': 'Yazır',
+  'D3KDR08': 'Seydişehir',
+  'D3KDR11': 'Beyşehir',
+  'D3KDR18': 'Bozkır',
+  'D39DR06': 'Kale',
+  'D39DR07': 'Kazım Karabekir',
+  'D39DR08': 'Üniversite',
+  'D39DR09': 'Ermenek',
+  'D3NDR01': 'Ilgın',
+  'D3NDR02': 'Sarayönü',
+  'D3NDR03': 'Akşehir',
+  'D3NDR05': 'Yunak',
+  'D3NDR06': 'Akşehir-Köyler',
+  'D37DR01': 'Cihanbeyli',
+  'D37DR03': 'Kulu',
+  'D37DR05': 'Altınekin',
+  'D3HDR01': 'Selçuk',
+  'D3HDR02': 'Çiftlik',
+  'D3HDR03': 'Bor',
+  'D3HDR04': 'Çamardı',
+  'D3HDR05': 'Niğde',
+  'D3HDR06': 'İlhanlı',
+  'D3HDR07': 'Ulukışla',
+  'D38DR01': 'Ereğli Merkez',
+  'D38DR02': 'Ereğli-Halkapınar',
+  'D38DR03': 'Karapınar',
+};
+function posName(code){ return POSITION_NAMES[code] || code; }
+function fmtDate(isoStr){
+  if(!isoStr) return '-';
+  const d=isoStr.split('T')[0].split('-');
+  if(d.length!==3) return isoStr;
+  return d[2]+'.'+d[1]+'.'+d[0];
+}
+function fmtDateTime(isoStr){
+  if(!isoStr) return '-';
+  const parts=isoStr.split('T');
+  const d=parts[0].split('-');
+  const t=parts[1]?parts[1].slice(0,5):'';
+  return d[2]+'.'+d[1]+'.'+d[0]+(t?' '+t:'');
+}
+
+// ===== STATE =====
+let allInv=[], allCol=[], filtInv=[], filtCol=[];
+let invSel=new Set(), colSel=new Set(), invEdited=new Set(), colEdited=new Set();
+let mergeFiles=[], loadedFileName='';
+let curTab='inv';
+let invPage=1, colPage=1;
+const PG=50;
+let invSortF='ISSUEDATE', invSortA=false;
+let colSortF='ISSUEDATE', colSortA=false;
+
+// ===== FILE =====
+const fileInput=document.getElementById('fileInput');
+fileInput.addEventListener('change', e=>loadFile(e.target.files[0]));
+
+const landing=document.getElementById('landing');
+landing.addEventListener('dragover', e=>{e.preventDefault();});
+landing.addEventListener('drop', e=>{e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);});
+
+function loadFile(file){
+  if(!file) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      allInv=d.INVOICES||[];
+      allCol=d.COLLECTIONS||[];
+      loadedFileName=file.name.replace(/\.json$/i,'');
+      initApp();
+    }catch(err){alert('Geçersiz JSON: '+err.message);}
+  };
+  r.readAsText(file);
+}
+
+function initApp(){
+  document.getElementById('landing').style.display='none';
+  document.getElementById('statsBar').classList.add('visible');
+  document.getElementById('tabs').classList.add('visible');
+  document.getElementById('invToolbar').classList.add('visible');
+  document.getElementById('invTableWrap').classList.add('visible');
+  document.getElementById('colToolbar').classList.add('visible');
+  document.getElementById('colTableWrap').classList.add('visible');
+
+  // Fatura pozisyon
+  const iPos=[...new Set(allInv.map(i=>i.POSITION?.CODE).filter(Boolean))].sort();
+  const iPosEl=document.getElementById('invFPos');
+  iPos.forEach(p=>{
+    const inv=allInv.find(i=>i.POSITION?.CODE===p);
+    const o=document.createElement('option');
+    o.value=p; o.textContent=posName(p);
+    iPosEl.appendChild(o);
+  });
+
+  // Tahsilat pozisyon
+  const cPos=[...new Set(allCol.map(c=>c.POSITION?.CODE).filter(Boolean))].sort();
+  const cPosEl=document.getElementById('colFPos');
+  cPos.forEach(p=>{
+    const col=allCol.find(c=>c.POSITION?.CODE===p);
+    const o=document.createElement('option');
+    o.value=p; o.textContent=posName(p);
+    cPosEl.appendChild(o);
+  });
+
+  updateStats();
+  applyInv();
+  applyCol();
+}
+
+function updateStats(){
+  document.getElementById('sInvTotal').textContent=allInv.filter(i=>i.STATUS?.trim()==='I').length;
+  document.getElementById('sInvCancelled').textContent=allInv.filter(i=>i.STATUS?.trim()==='X').length;
+  document.getElementById('sColTotal').textContent=allCol.length;
+}
+
+// ===== TABS =====
+function switchTab(tab){
+  curTab=tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='inv')||(i===1&&tab==='col')));
+  document.getElementById('invTab').classList.toggle('active', tab==='inv');
+  document.getElementById('colTab').classList.toggle('active', tab==='col');
+  document.getElementById('invBar').classList.toggle('visible', tab==='inv' && allInv.length>0);
+  document.getElementById('colBar').classList.toggle('visible', tab==='col' && allCol.length>0);
+  if(tab==='inv') updateInvUI();
+  if(tab==='col') updateColUI();
+}
+
+// ===== FATURA FİLTRE =====
+function applyInv(){
+  const q=document.getElementById('invSearch').value.toLocaleLowerCase('tr-TR');
+  const st=document.getElementById('invFStatus').value;
+  const ty=document.getElementById('invFType').value;
+  const po=document.getElementById('invFPos').value;
+  filtInv=allInv.filter(inv=>{
+    if(st && inv.STATUS?.trim()!==st) return false;
+    if(ty && inv.SALESTYPE!==ty) return false;
+    if(po && inv.POSITION?.CODE!==po) return false;
+    if(q){
+      const h=[inv.CODE,inv.LEGALNUMBER,inv.CUSTOMER?.CODE,inv.CUSTOMER?.REGISTEREDNAME,inv.CUSTOMER?.TAXNUMBER,inv.POSITION?.DESCRIPTION].join(' ').toLocaleLowerCase('tr-TR');
+      if(!h.includes(q)) return false;
+    }
+    return true;
+  });
+  filtInv.sort((a,b)=>{
+    let va=a[invSortF],vb=b[invSortF];
+    if(typeof va==='string'){va=va.toLocaleLowerCase('tr-TR');vb=vb.toLocaleLowerCase('tr-TR');}
+    return va<vb?(invSortA?-1:1):va>vb?(invSortA?1:-1):0;
+  });
+  invPage=1; renderInv(); renderPag('invPag',filtInv.length,invPage,p=>{invPage=p;renderInv();renderPag('invPag',filtInv.length,invPage,arguments.callee);});
+}
+function invSort(f){if(invSortF===f)invSortA=!invSortA;else{invSortF=f;invSortA=true;}applyInv();}
+
+function renderInv(){
+  const body=document.getElementById('invBody');
+  body.innerHTML='';
+  document.getElementById('invEmpty').style.display=filtInv.length===0?'block':'none';
+  const page=filtInv.slice((invPage-1)*PG, invPage*PG);
+  page.forEach(inv=>{
+    const tr=document.createElement('tr');
+    const cancelled=inv.STATUS?.trim()==='X';
+    if(cancelled) tr.classList.add('cancelled-row');
+    const isSplitted=invEdited.has(inv.CODE)&&(inv.PAYMENTS||[]).some(p=>p.CODE&&p.CODE.endsWith('_HAV'));
+    if(invEdited.has(inv.CODE)) tr.classList.add('edited-row');
+    const date=fmtDate(inv.ISSUEDATE);
+    const isEF=inv.LEGALNUMBER?.toUpperCase().startsWith('Z');
+    tr.innerHTML=`
+      <td class="cb-cell"><input type="checkbox" ${invSel.has(inv.CODE)?'checked':''} onchange="invChk('${inv.CODE}',this)" onclick="event.stopPropagation()"></td>
+      <td class="mono">${inv.LEGALNUMBER||inv.CODE}</td>
+      <td class="mono">${date}</td>
+      <td>${inv.CUSTOMER?.REGISTEREDNAME||'-'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${posName(inv.POSITION?.CODE)||'-'}</td>
+      <td><span class="badge ${inv.SALESTYPE==='HHSATIS'?'b-hh':'b-vadeli'}">${inv.SALESTYPE==='HHSATIS'?'HH Satış':'Vadeli'}</span></td>
+      <td><span class="badge ${cancelled?'b-cancelled':'b-active'}">${cancelled?'İptal':'Aktif'}</span></td>
+      <td>${(inv.PAYMENTS||[]).map(p=>{const c=p.PAYMENTFORM?.CODE||'';const cls=c==='CASH'?'b-vadetah':c==='HAVALE'?'b-vadetahhav':'';const lbl=p.PAYMENTFORM?.DESCRIPTION||c||'-';return cls?'<span class="badge '+cls+'" style="margin-right:2px">'+lbl+'</span>':lbl;}).join(' ')||'-'}</td>
+      <td class="amount">${Number(inv.NETAMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${isSplitted?' <span title="Ödeme bölündü" style="color:var(--accent2);font-size:11px">✂</span>':''}</td>
+      <td class="amount" style="color:var(--accent2)">${Number(inv.OUTSTANDINGAMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
+      <td><span class="badge ${isEF?'b-efatura':'b-earsiv'}">${isEF?'e-Fatura':'e-Arşiv'}</span></td>`;
+    tr.onclick=e=>{if(e.target.type==='checkbox')return; openInvModal(inv);};
+    body.appendChild(tr);
+  });
+  const pageCodes=page.map(i=>i.CODE);
+  const cb=document.getElementById('invAllCb');
+  cb.checked=pageCodes.length>0&&pageCodes.every(c=>invSel.has(c));
+  cb.indeterminate=!cb.checked&&pageCodes.some(c=>invSel.has(c));
+  updateInvUI();
+}
+
+function invChk(code,cb){if(cb.checked)invSel.add(code);else invSel.delete(code);updateInvUI();}
+function invToggleAll(cb){const page=filtInv.slice((invPage-1)*PG,invPage*PG);page.forEach(inv=>{if(cb.checked)invSel.add(inv.CODE);else invSel.delete(inv.CODE);});renderInv();}
+function invSelAll(){filtInv.forEach(inv=>invSel.add(inv.CODE));renderInv();}
+function invClearSel(){invSel.clear();renderInv();}
+
+function updateInvUI(){
+  const cnt=invSel.size;
+  document.getElementById('sInvSelected').textContent=cnt;
+  document.getElementById('invSelCnt').textContent=cnt;
+  if(curTab==='inv'&&allInv.length>0){
+    document.getElementById('invBar').classList.add('visible');
+    if(cnt>0){
+      const total=allInv.filter(i=>invSel.has(i.CODE)).reduce((s,i)=>s+(i.NETAMOUNT||0),0);
+      document.getElementById('invSelTot').textContent='Toplam: '+total.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+      document.getElementById('invExpBtn').textContent='⬇ Seçilenleri İndir';
+      document.getElementById('inclCol').parentElement.style.display='flex';
+    } else {
+      document.getElementById('invSelTot').textContent='';
+      document.getElementById('invExpBtn').textContent='⬇ Tümünü İndir';
+      document.getElementById('inclCol').parentElement.style.display='none';
+    }
+    document.getElementById('invExpBtn').disabled=false;
+  } else {
+    document.getElementById('invBar').classList.remove('visible');
+  }
+}
+
+function invToggleCompare(){document.getElementById('invCompare').classList.toggle('visible');}
+
+// ===== TAHSİLAT FİLTRE =====
+function applyCol(){
+  const q=document.getElementById('colSearch').value.toLocaleLowerCase('tr-TR');
+  const pa=document.getElementById('colFPay').value;
+  const po=document.getElementById('colFPos').value;
+  filtCol=allCol.filter(col=>{
+    if(pa && col.PAYMENTFORM?.CODE!==pa) return false;
+    if(po && col.POSITION?.CODE!==po) return false;
+    if(q){
+      const h=[col.CODE,col.INVOICE_CODE,col.CUSTOMER?.CODE,col.CUSTOMER?.REGISTEREDNAME,col.POSITION?.DESCRIPTION].join(' ').toLocaleLowerCase('tr-TR');
+      if(!h.includes(q)) return false;
+    }
+    return true;
+  });
+  filtCol.sort((a,b)=>{
+    let va=a[colSortF],vb=b[colSortF];
+    if(typeof va==='string'){va=va.toLocaleLowerCase('tr-TR');vb=vb.toLocaleLowerCase('tr-TR');}
+    return va<vb?(colSortA?-1:1):va>vb?(colSortA?1:-1):0;
+  });
+  colPage=1; renderCol(); renderPag('colPag',filtCol.length,colPage,p=>{colPage=p;renderCol();renderPag('colPag',filtCol.length,colPage,arguments.callee);});
+}
+function colSort(f){if(colSortF===f)colSortA=!colSortA;else{colSortF=f;colSortA=true;}applyCol();}
+
+function renderCol(){
+  const body=document.getElementById('colBody');
+  body.innerHTML='';
+  document.getElementById('colEmpty').style.display=filtCol.length===0?'block':'none';
+  const page=filtCol.slice((colPage-1)*PG,colPage*PG);
+  page.forEach(col=>{
+    const tr=document.createElement('tr');
+    if(colEdited.has(col.CODE)) tr.classList.add('edited-row');
+    const date=fmtDate(col.ISSUEDATE);
+    const payCode=col.PAYMENTFORM?.CODE||'';
+    const payDesc=col.PAYMENTFORM?.DESCRIPTION||payCode;
+    const isColSplit=(col.CODE||'').endsWith('_HAV');
+    tr.innerHTML=`
+      <td class="cb-cell"><input type="checkbox" ${colSel.has(col.CODE)?'checked':''} onchange="colChk('${col.CODE}',this)" onclick="event.stopPropagation()"></td>
+      <td class="mono">${col.CODE||'-'}</td>
+      <td class="mono">${date}</td>
+      <td>${col.CUSTOMER?.REGISTEREDNAME||'-'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${posName(col.POSITION?.CODE)||'-'}</td>
+      <td><span class="badge ${payCode==='VADETAHHAV'?'b-vadetahhav':'b-vadetah'}">${payDesc}</span></td>
+      <td class="mono" style="font-size:11px;color:var(--text-dim)">${col.INVOICE_CODE ? col.INVOICE_CODE.split('_').pop() : '-'}</td>
+      <td class="amount">${Number(col.AMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${isColSplit?' <span title="Bölünmüş kayıt" style="color:var(--accent2);font-size:11px">✂</span>':''}</td>`;
+    tr.onclick=e=>{if(e.target.type==='checkbox')return; openColModal(col);};
+    body.appendChild(tr);
+  });
+  const pageCodes=page.map(c=>c.CODE);
+  const cb=document.getElementById('colAllCb');
+  cb.checked=pageCodes.length>0&&pageCodes.every(c=>colSel.has(c));
+  cb.indeterminate=!cb.checked&&pageCodes.some(c=>colSel.has(c));
+  updateColUI();
+}
+
+function colChk(code,cb){if(cb.checked)colSel.add(code);else colSel.delete(code);updateColUI();}
+function colToggleAll(cb){const page=filtCol.slice((colPage-1)*PG,colPage*PG);page.forEach(col=>{if(cb.checked)colSel.add(col.CODE);else colSel.delete(col.CODE);});renderCol();}
+function colSelAll(){filtCol.forEach(col=>colSel.add(col.CODE));renderCol();}
+function colClearSel(){colSel.clear();renderCol();}
+
+function updateColUI(){
+  const cnt=colSel.size;
+  document.getElementById('sColSelected').textContent=cnt;
+  document.getElementById('colSelCnt').textContent=cnt;
+  if(curTab==='col'&&allCol.length>0){
+    document.getElementById('colBar').classList.add('visible');
+    if(cnt>0){
+      const total=allCol.filter(c=>colSel.has(c.CODE)).reduce((s,c)=>s+(c.AMOUNT||0),0);
+      document.getElementById('colSelTot').textContent='Toplam: '+total.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+      document.getElementById('colExpBtn').textContent='⬇ Seçilenleri İndir';
+    } else {
+      document.getElementById('colSelTot').textContent='';
+      document.getElementById('colExpBtn').textContent='⬇ Tümünü İndir';
+    }
+    document.getElementById('colExpBtn').disabled=false;
+  } else {
+    document.getElementById('colBar').classList.remove('visible');
+  }
+}
+
+function colToggleCompare(){document.getElementById('colCompare').classList.toggle('visible');}
+
+// ===== PAGINATION =====
+function renderPag(id,total,current,onPage){
+  const pg=document.getElementById(id);
+  pg.innerHTML='';
+  const totalPages=Math.ceil(total/PG);
+  if(totalPages<=1) return;
+  const info=document.createElement('span');
+  info.className='page-info';
+  info.textContent=total+' kayıt · Sayfa '+current+'/'+totalPages;
+  pg.appendChild(info);
+  const prev=document.createElement('button');
+  prev.textContent='← Önceki'; prev.disabled=current===1;
+  prev.onclick=()=>onPage(current-1); pg.appendChild(prev);
+  const pages=[];
+  for(let i=1;i<=totalPages;i++) if(i===1||i===totalPages||Math.abs(i-current)<=2) pages.push(i);
+  let last=0;
+  pages.forEach(p=>{
+    if(last&&p-last>1){const d=document.createElement('span');d.className='page-info';d.textContent='...';pg.appendChild(d);}
+    const btn=document.createElement('button');
+    btn.textContent=p;
+    if(p===current) btn.classList.add('active');
+    btn.onclick=()=>onPage(p); pg.appendChild(btn); last=p;
+  });
+  const next=document.createElement('button');
+  next.textContent='Sonraki →'; next.disabled=current===totalPages;
+  next.onclick=()=>onPage(current+1); pg.appendChild(next);
+}
+
+// ===== COMPARE =====
+function buildCompare(container,missing,extra,searchFn,extraExportFn){
+  container.innerHTML='';
+  function makeGroup(title,cls,items,liCls){
+    const grp=document.createElement('div'); grp.className='result-group';
+    const hdr=document.createElement('div'); hdr.className='result-group-header';
+    hdr.innerHTML='<span>'+title+'</span><span class="result-count '+cls+'">'+items.length+'</span>';
+    const body=document.createElement('div'); body.className='result-group-body open';
+    hdr.onclick=()=>body.classList.toggle('open');
+    if(items.length>0){
+      const ul=document.createElement('ul'); ul.className='result-list';
+      items.forEach(n=>{const li=document.createElement('li');li.className=liCls;li.textContent=n;li.onclick=()=>searchFn(n);ul.appendChild(li);});
+      body.appendChild(ul);
+      if(liCls==='li-extra'&&extraExportFn){
+        const btn=document.createElement('button');
+        btn.className='btn btn-success'; btn.style.marginTop='10px';
+        btn.textContent='⬇ JSON İndir ('+items.length+' kayıt)';
+        btn.addEventListener('click',()=>extraExportFn(items));
+        body.appendChild(btn);
+      }
+    } else {
+      body.innerHTML='<p style="font-size:12px;color:var(--text-dim);margin-top:8px">Kayıt yok.</p>';
+    }
+    grp.appendChild(hdr); grp.appendChild(body); container.appendChild(grp);
+  }
+  makeGroup('🔴 Listede var, JSON\'da yok','count-missing',missing,'li-missing');
+  makeGroup('🟡 JSON\'da var, listede yok','count-extra',extra,'li-extra');
+}
+
+function runInvCompare(){
+  const listNums=document.getElementById('invCmpInput').value.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+  const jsonMap={};
+  allInv.forEach(inv=>{if(inv.LEGALNUMBER&&inv.STATUS?.trim()!=='X') jsonMap[inv.LEGALNUMBER.trim()]=inv;});
+  const listSet=new Set(listNums), jsonSet=new Set(Object.keys(jsonMap));
+  buildCompare(
+    document.getElementById('invCmpResults'),
+    listNums.filter(n=>!jsonSet.has(n)),
+    [...jsonSet].filter(n=>!listSet.has(n)),
+    n=>{document.getElementById('invSearch').value=n;applyInv();invToggleCompare();},
+    items=>{
+      const sel=items.map(n=>jsonMap[n]).filter(Boolean);
+      const selCodes=new Set(sel.map(i=>i.CODE));
+      const selCol=allCol.filter(c=>selCodes.has(c.INVOICE_CODE));
+      showConfirm('Fazladan Faturalar',[
+        {val:sel.length,lbl:'Fatura'},
+        {val:sel.reduce((s,i)=>s+(i.NETAMOUNT||0),0).toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺',lbl:'Net Tutar',hi:true}
+      ],'',()=>dlJSON({INVOICES:sel,COLLECTIONS:selCol,Id:"00000000-0000-0000-0000-000000000000",RowCount:sel.length,ModDate:new Date().toISOString()},'FAZLADAN_FATURALAR_'+sel.length+'ADET'));
+    }
+  );
+}
+
+function runColCompare(){
+  const listNums=document.getElementById('colCmpInput').value.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+  const jsonMap={};
+  allCol.forEach(col=>{if(col.CODE&&col.PAYMENTFORM?.CODE==='VADETAH') jsonMap[col.CODE.trim()]=col;});
+  allInv.forEach(inv=>{(inv.PAYMENTS||[]).filter(p=>p.PAYMENTFORM?.CODE==='CASH').forEach(p=>{if(p.CODE) jsonMap[p.CODE.trim()]={_fromInv:true,_inv:inv,_pay:p};});});
+  const listSet=new Set(listNums), jsonSet=new Set(Object.keys(jsonMap));
+  buildCompare(
+    document.getElementById('colCmpResults'),
+    listNums.filter(n=>!jsonSet.has(n)),
+    [...jsonSet].filter(n=>!listSet.has(n)),
+    n=>{document.getElementById('colSearch').value=n;applyCol();colToggleCompare();},
+    items=>{
+      const sel=items.map(n=>jsonMap[n]).filter(Boolean);
+      const selCols=sel.filter(s=>!s._fromInv);
+      const selInvCodes=new Set(sel.filter(s=>s._fromInv).map(s=>s._inv.CODE));
+      const selInvs=allInv.filter(i=>selInvCodes.has(i.CODE)).map(inv=>{
+        const relPays=sel.filter(s=>s._fromInv&&s._inv.CODE===inv.CODE).map(s=>s._pay);
+        return Object.assign({},inv,{PAYMENTS:relPays});
+      });
+      showConfirm('Fazladan Tahsilatlar',[
+        {val:sel.length,lbl:'Tahsilat'},
+        {val:(selCols.reduce((s,c)=>s+(c.AMOUNT||0),0)+sel.filter(s=>s._fromInv).reduce((s,e)=>s+(e._pay.AMOUNT||0),0)).toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺',lbl:'Toplam Tutar',hi:true}
+      ],'',()=>dlJSON({INVOICES:selInvs,COLLECTIONS:selCols,Id:"00000000-0000-0000-0000-000000000000",RowCount:sel.length,ModDate:new Date().toISOString()},'FAZLADAN_TAHSILATLAR_'+sel.length+'ADET'));
+    }
+  );
+}
+
+// ===== EXPORT =====
+function calcPayTotals(invList, colList){
+  const invNakit=invList.reduce((s,i)=>(i.PAYMENTS||[]).filter(p=>p.PAYMENTFORM?.CODE==='CASH').reduce((ss,p)=>ss+(p.AMOUNT||0),s),0);
+  const invHavale=invList.reduce((s,i)=>(i.PAYMENTS||[]).filter(p=>p.PAYMENTFORM?.CODE==='HAVALE').reduce((ss,p)=>ss+(p.AMOUNT||0),s),0);
+  const colNakit=colList.filter(c=>c.PAYMENTFORM?.CODE==='VADETAH').reduce((s,c)=>s+(c.AMOUNT||0),0);
+  const colHavale=colList.filter(c=>c.PAYMENTFORM?.CODE==='VADETAHHAV').reduce((s,c)=>s+(c.AMOUNT||0),0);
+  return {invNakit,invHavale,colNakit,colHavale};
+}
+
+function exportInv(){
+  const inclCol=document.getElementById('inclCol').checked;
+  const isAll=invSel.size===0;
+  const selInv=isAll?allInv:allInv.filter(i=>invSel.has(i.CODE)).map(inv=>{
+    if(!inclCol&&inv.SALESTYPE==='HHSATIS') return Object.assign({},inv,{PAYMENTS:[]});
+    return Object.assign({},inv);
+  });
+  const selCodes=new Set(selInv.map(i=>i.CODE));
+  const selCol=isAll?allCol:(inclCol?allCol.filter(c=>selCodes.has(c.INVOICE_CODE)):[]);
+  const t=calcPayTotals(selInv,selCol);
+  const fmt=v=>v.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+  const label=loadedFileName||( isAll?'TUMU_'+selInv.length+'FATURA':'FATURALAR_'+selInv.length+'ADET');
+  showConfirm('JSON İndir',[
+    {val:selInv.length,lbl:'Fatura'},
+    {val:selCol.length,lbl:'Tahsilat'},
+    {val:fmt(t.invNakit),lbl:'Fatura Nakit',hi:true},
+    {val:fmt(t.invHavale),lbl:'Fatura Havale',hi:true},
+    {val:fmt(t.colNakit),lbl:'Tahsilat Nakit',hi:true},
+    {val:fmt(t.colHavale),lbl:'Tahsilat Havale',hi:true}
+  ],inclCol?'':'Tahsilatlar dahil edilmeyecek.',
+  ()=>dlJSON({INVOICES:selInv,COLLECTIONS:selCol,Id:"00000000-0000-0000-0000-000000000000",RowCount:selInv.length,ModDate:new Date().toISOString()},label));
+}
+
+function exportCol(){
+  const isAll=colSel.size===0;
+  const selCol=isAll?allCol:allCol.filter(c=>colSel.has(c.CODE));
+  const selInvList=isAll?allInv:[];
+  const t=calcPayTotals(selInvList,selCol);
+  const fmt=v=>v.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+  const label=loadedFileName||(isAll?'TUMU_'+allInv.length+'FATURA_'+selCol.length+'TAHSILAT':'TAHSILATLAR_'+selCol.length+'ADET');
+  const stats=[
+    {val:isAll?allInv.length:0,lbl:'Fatura'},
+    {val:selCol.length,lbl:'Tahsilat'},
+    {val:fmt(t.invNakit),lbl:'Fatura Nakit',hi:true},
+    {val:fmt(t.invHavale),lbl:'Fatura Havale',hi:true},
+    {val:fmt(t.colNakit),lbl:'Tahsilat Nakit',hi:true},
+    {val:fmt(t.colHavale),lbl:'Tahsilat Havale',hi:true}
+  ];
+  showConfirm('JSON İndir',stats,'',()=>dlJSON({INVOICES:isAll?allInv:[],COLLECTIONS:selCol,Id:"00000000-0000-0000-0000-000000000000",RowCount:selCol.length,ModDate:new Date().toISOString()},label));
+}
+
+async function dlJSON(data,label){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  if(window.showSaveFilePicker){
+    try{
+      const fh=await window.showSaveFilePicker({suggestedName:label+'.json',types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+      const w=await fh.createWritable();
+      await w.write(blob);
+      await w.close();
+      return;
+    }catch(e){if(e.name==='AbortError') return;}
+  }
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=label+'.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ===== CONFIRM =====
+function showConfirm(title,stats,note,onOk){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmStats').innerHTML=stats.map(s=>'<div class="confirm-stat'+(s.hi?' hi':'')+'"><div class="val">'+s.val+'</div><div class="lbl">'+s.lbl+'</div></div>').join('');
+  document.getElementById('confirmNote').textContent=note||'';
+  const ok=document.getElementById('confirmOk');
+  ok.onclick=()=>{document.getElementById('confirmOverlay').classList.remove('open');onOk();};
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+// ===== MODALS =====
+function openInvModal(inv){
+  const isEF=inv.LEGALNUMBER?.toUpperCase().startsWith('Z');
+  const date=fmtDateTime(inv.ISSUEDATE);
+  const due=fmtDate(inv.DUEDATE);
+  let detHTML='', payHTML='';
+  if(inv.DETAILS&&inv.DETAILS.length>0){
+    const rows=inv.DETAILS.filter(d=>d.QUANTITY>0).map(d=>`<tr>
+      <td>${d.PRODUCT?.CODE||'-'}</td><td>${d.PRODUCT?.DESCRIPTION||'-'}</td>
+      <td class="right">${d.QUANTITY}</td>
+      <td class="right">${Number(d.PRICE||0).toLocaleString('tr-TR',{minimumFractionDigits:4})} ₺</td>
+      <td class="right">${Number(d.NETAMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
+    </tr>`).join('');
+    detHTML=`<div class="modal-section"><h4>Ürün Detayları</h4><div style="overflow-x:auto"><table class="modal-table"><thead><tr><th>Kod</th><th>Ürün</th><th>Miktar</th><th>Birim Fiyat</th><th>Tutar</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
+  if(inv.PAYMENTS&&inv.PAYMENTS.length>0){
+    const rows=inv.PAYMENTS.map((p,idx)=>{
+      const pCode=p.PAYMENTFORM?.CODE||'';
+      const popts=[
+        {code:'CASH',desc:'Nakit'},
+        {code:'HAVALE',desc:'Havale'}
+      ].map(t=>`<option value="${t.code}" ${pCode===t.code?'selected':''}>${t.desc}</option>`).join('');
+      return `<tr>
+        <td>${p.CODE||'-'}</td>
+        <td>${fmtDate(p.ISSUEDATE)}</td>
+        <td><select style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;" onchange="saveInvPayment('${inv.CODE}',${idx},this.value)">${popts}</select></td>
+        <td class="right">${Number(p.AMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
+        <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="openInvSplit('${inv.CODE}',${idx})">✂ Böl</button></td>
+      </tr>`;
+    }).join('');
+    payHTML=`<div class="modal-section"><h4>Ödemeler</h4><table class="modal-table"><thead><tr><th>Kod</th><th>Tarih</th><th>Tip</th><th>Tutar</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div id="invSplitArea"></div>`;
+  }
+  document.getElementById('invModalTitle').textContent=inv.LEGALNUMBER||inv.CODE;
+  document.getElementById('invModalBody').innerHTML=`
+    <div class="modal-section"><h4>Fatura Bilgileri</h4><div class="modal-grid">
+      <div class="modal-field"><label>Fatura No</label><span>${inv.LEGALNUMBER||'-'}</span></div>
+      <div class="modal-field">
+        <label>Tip · ${isEF?'e-Fatura':'e-Arşiv'}</label>
+        <select id="invTypeEdit" style="width:100%;margin-top:4px" onchange="onInvTypeChange()">
+          <option value="HHSATIS" ${inv.SALESTYPE==='HHSATIS'?'selected':''}>HH Satış</option>
+          <option value="VADELISATIS" ${inv.SALESTYPE==='VADELISATIS'?'selected':''}>Vadeli Satış</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Durum</label><span>${inv.STATUS?.trim()==='X'?'İptal':'Aktif'}</span></div>
+      <div class="modal-field"><label>Tarih</label><span>${date}</span></div>
+      <div class="modal-field" id="invDueField">
+        <label>Vade Günü</label>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          <input type="number" id="invCreditDaysEdit" min="0" max="365" value="${inv.CREDITDAYS||0}" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;" oninput="onInvDueDaysInput('${inv.CODE}')">
+          <span style="font-size:12px;color:var(--text-dim)">gün</span>
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:12px" onclick="saveInvTypeAndDue('${inv.CODE}')">Kaydet</button>
+        </div>
+        <div id="invDueInfo" style="font-size:11px;color:var(--text-dim);margin-top:4px">${due}</div>
+      </div>
+      <div class="modal-field"><label>Bölge</label><span>${posName(inv.POSITION?.CODE)}</span></div>
+    </div></div>`;
+  // Vadeli değilse vade alanını gizle
+  if(inv.SALESTYPE!=='VADELISATIS') document.getElementById('invDueField').style.display='none';
+  document.getElementById('invModalBody').innerHTML+=`
+    <div class="modal-section"><h4>Müşteri</h4><div class="modal-grid">
+      <div class="modal-field"><label>Kod</label><span>${inv.CUSTOMER?.CODE||'-'}</span></div>
+      <div class="modal-field"><label>Ünvan</label><span>${inv.CUSTOMER?.REGISTEREDNAME||'-'}</span></div>
+      <div class="modal-field"><label>Vergi No</label><span>${inv.CUSTOMER?.TAXNUMBER||'-'}</span></div>
+      <div class="modal-field"><label>Ruhsat No</label><span>${inv.CUSTOMER?.LICENSENUMBER||'-'}</span></div>
+    </div></div>
+    <div class="modal-section"><h4>Tutarlar</h4><div class="modal-grid">
+      <div class="modal-field"><label>Toplam</label><span>${Number(inv.NETAMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</span></div>
+      <div class="modal-field"><label>Açık Bakiye</label><span style="color:var(--accent2)">${Number(inv.OUTSTANDINGAMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</span></div>
+    </div></div>
+    ${detHTML}${payHTML}`;
+  document.getElementById('invModal').classList.add('open');
+}
+
+function openColModal(col){
+  const date=fmtDateTime(col.ISSUEDATE);
+  const curCode=col.PAYMENTFORM?.CODE||'';
+  const PAYMENT_TYPES=[
+    {code:'VADETAH',desc:'Vadeli Tahsilat'},
+    {code:'VADETAHHAV',desc:'Vadeli Tahsilat Havale'}
+  ];
+  const opts=PAYMENT_TYPES.map(t=>`<option value="${t.code}" ${curCode===t.code?'selected':''}>${t.desc}</option>`).join('');
+  document.getElementById('colModalTitle').textContent=col.CODE||'Tahsilat Detayı';
+  document.getElementById('colModalBody').innerHTML=`
+    <div class="modal-section"><h4>Tahsilat Bilgileri</h4><div class="modal-grid">
+      <div class="modal-field"><label>Tahsilat Kodu</label><span>${col.CODE||'-'}</span></div>
+      <div class="modal-field"><label>Tarih</label><span>${date}</span></div>
+      <div class="modal-field">
+        <label>Ödeme Tipi</label>
+        <select id="colPayEdit" style="width:100%;margin-top:4px" onchange="saveColPayment('${col.CODE}')">${opts}</select>
+      </div>
+      <div class="modal-field"><label>Bölge</label><span>${posName(col.POSITION?.CODE)}</span></div>
+      <div class="modal-field"><label>Tutar</label><span style="color:var(--success);font-size:15px">${Number(col.AMOUNT||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</span></div>
+      <div class="modal-field"><label>Bağlı Fatura</label><span style="font-size:11px">${col.INVOICE_CODE ? col.INVOICE_CODE.split('_').pop() : '-'}</span></div>
+    </div></div>
+    <div class="modal-section"><h4>Müşteri</h4><div class="modal-grid">
+      <div class="modal-field"><label>Kod</label><span>${col.CUSTOMER?.CODE||'-'}</span></div>
+      <div class="modal-field"><label>Ünvan</label><span>${col.CUSTOMER?.REGISTEREDNAME||'-'}</span></div>
+      <div class="modal-field"><label>Vergi No</label><span>${col.CUSTOMER?.TAXNUMBER||'-'}</span></div>
+      <div class="modal-field"><label>Ruhsat No</label><span>${col.CUSTOMER?.LICENSENUMBER||'-'}</span></div>
+    </div></div>
+    <div id="colSplitArea"></div>`;
+  document.getElementById('colModal').classList.add('open');
+  // split butonu ekle
+  const colSplitArea=document.getElementById('colSplitArea');
+  const splitBtn=document.createElement('button');
+  splitBtn.className='btn btn-ghost'; splitBtn.style.cssText='margin-top:4px;width:100%;justify-content:center;';
+  splitBtn.textContent='✂ Tahsilatı Böl';
+  splitBtn.onclick=()=>{splitBtn.style.display='none'; renderColSplit(col.CODE);};
+  colSplitArea.appendChild(splitBtn);
+}
+
+const COL_PAYMENT_TYPES={
+  'VADETAH':{CODE:'VADETAH',DESCRIPTION:'Vadeli Tahsilat'},
+  'VADETAHHAV':{CODE:'VADETAHHAV',DESCRIPTION:'Vadeli Tahsilat Havale'}
+};
+
+const INV_PAYMENT_TYPES={
+  'CASH':{CODE:'CASH',DESCRIPTION:'Nakit'},
+  'HAVALE':{CODE:'HAVALE',DESCRIPTION:'Havale'}
+};
+
+function saveInvPayment(invCode,payIdx,newCode){
+  const inv=allInv.find(i=>i.CODE===invCode);
+  if(!inv||!inv.PAYMENTS||!inv.PAYMENTS[payIdx]) return;
+  inv.PAYMENTS[payIdx].PAYMENTFORM=Object.assign({},inv.PAYMENTS[payIdx].PAYMENTFORM,INV_PAYMENT_TYPES[newCode]);
+  invEdited.add(invCode);
+  renderInv();
+}
+
+function onInvTypeChange(){
+  const sel=document.getElementById('invTypeEdit');
+  const dueField=document.getElementById('invDueField');
+  if(!sel||!dueField) return;
+  dueField.style.display=sel.value==='VADELISATIS'?'block':'none';
+}
+
+function onInvDueDaysInput(invCode){
+  const inv=allInv.find(i=>i.CODE===invCode);
+  if(!inv) return;
+  const days=parseInt(document.getElementById('invCreditDaysEdit').value)||0;
+  const issueDate=inv.ISSUEDATE?new Date(inv.ISSUEDATE):new Date();
+  const due=new Date(issueDate);
+  due.setDate(due.getDate()+days);
+  const info=document.getElementById('invDueInfo');
+  if(info) info.textContent=fmtDate(due.toISOString())+' ('+days+' gün)';
+}
+
+function saveInvTypeAndDue(invCode){
+  const inv=allInv.find(i=>i.CODE===invCode);
+  if(!inv) return;
+  const newType=document.getElementById('invTypeEdit').value;
+  const days=parseInt(document.getElementById('invCreditDaysEdit').value)||0;
+  inv.SALESTYPE=newType;
+  inv.CREDITDAYS=days;
+  if(newType==='VADELISATIS'){
+    const issueDate=inv.ISSUEDATE?new Date(inv.ISSUEDATE):new Date();
+    const due=new Date(issueDate);
+    due.setDate(due.getDate()+days);
+    inv.DUEDATE=due.toISOString().split('T')[0]+'T00:00:00';
+    inv.PAYMENTS=[];
+    inv.OUTSTANDINGAMOUNT=inv.NETAMOUNT;
+  } else {
+    // HH Satışa geri dönüyorsa vade sıfırla
+    inv.DUEDATE=inv.ISSUEDATE?inv.ISSUEDATE.split('T')[0]+'T00:00:00':inv.DUEDATE;
+    inv.CREDITDAYS=0;
+  }
+  invEdited.add(invCode);
+  applyInv();
+  openInvModal(inv);
+}
+
+function saveColPayment(code){
+  const newCode=document.getElementById('colPayEdit').value;
+  const col=allCol.find(c=>c.CODE===code);
+  if(!col) return;
+  if(!col.PAYMENTFORM) col.PAYMENTFORM={};
+  col.PAYMENTFORM.CODE=COL_PAYMENT_TYPES[newCode].CODE;
+  col.PAYMENTFORM.DESCRIPTION=COL_PAYMENT_TYPES[newCode].DESCRIPTION;
+  colEdited.add(code);
+  renderCol();
+}
+
+// ===== SPLIT - FATURA =====
+let invSplitState=null; // {invCode, payIdx, rows:[{amount,payCode}]}
+
+function openInvSplit(invCode, payIdx){
+  const inv=allInv.find(i=>i.CODE===invCode);
+  if(!inv) return;
+  const pay=inv.PAYMENTS[payIdx];
+  const total=pay.AMOUNT||0;
+  invSplitState={invCode,payIdx,rows:[{amount:'',payCode:pay.PAYMENTFORM?.CODE||'CASH'},{amount:'',payCode:pay.PAYMENTFORM?.CODE||'CASH'}]};
+  renderInvSplit();
+}
+
+function renderInvSplit(){
+  const area=document.getElementById('invSplitArea');
+  if(!area||!invSplitState) return;
+  const inv=allInv.find(i=>i.CODE===invSplitState.invCode);
+  const pay=inv.PAYMENTS[invSplitState.payIdx];
+  const total=pay.AMOUNT||0;
+  area.innerHTML='';
+  const sec=document.createElement('div'); sec.className='split-section';
+  sec.innerHTML=`<h5>✂ Ödeme Parçalama — Orijinal: ${total.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</h5>`;
+  invSplitState.rows.forEach((row,i)=>{
+    const div=document.createElement('div'); div.className='split-row';
+    const numInput=document.createElement('input'); numInput.type='number'; numInput.step='0.01'; numInput.min='0.01';
+    numInput.value=row.amount; numInput.placeholder='Tutar';
+    numInput.oninput=e=>{invSplitState.rows[i].amount=e.target.value; updateInvSplitInfo(total);};
+    const sel=document.createElement('select');
+    [{code:'CASH',desc:'Nakit'},{code:'HAVALE',desc:'Havale'}].forEach(t=>{
+      const o=document.createElement('option'); o.value=t.code; o.textContent=t.desc;
+      if(t.code===row.payCode) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.onchange=e=>{invSplitState.rows[i].payCode=e.target.value;};
+    const removeBtn=document.createElement('button'); removeBtn.className='btn-remove'; removeBtn.textContent='✕';
+    removeBtn.onclick=()=>{if(invSplitState.rows.length<=2) return; invSplitState.rows.splice(i,1); renderInvSplit();};
+    div.appendChild(numInput); div.appendChild(sel); div.appendChild(removeBtn);
+    sec.appendChild(div);
+  });
+  const info=document.createElement('div'); info.id='invSplitInfo'; info.className='split-total-info';
+  const saveBtn=document.createElement('button'); saveBtn.id='invSplitSave'; saveBtn.className='btn btn-success'; saveBtn.style.cssText='font-size:12px;padding:5px 14px;';
+  saveBtn.textContent='Kaydet';
+  saveBtn.onclick=()=>saveInvSplit();
+  const actions=document.createElement('div'); actions.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+  actions.appendChild(info); actions.appendChild(saveBtn);
+  sec.appendChild(actions);
+  area.appendChild(sec);
+  updateInvSplitInfo(total);
+}
+
+function updateInvSplitInfo(total){
+  const info=document.getElementById('invSplitInfo');
+  const saveBtn=document.getElementById('invSplitSave');
+  if(!info||!saveBtn) return;
+  const sumRows=invSplitState.rows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const ok=Math.abs(sumRows-total)<0.01;
+  info.className='split-total-info '+(ok?'split-total-ok':'split-total-err');
+  info.textContent='Toplam: '+sumRows.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺ / '+total.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(ok?' ✓':' — fark: '+(sumRows-total).toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺');
+  saveBtn.disabled=!ok;
+}
+
+function saveInvSplit(){
+  if(!invSplitState) return;
+  const inv=allInv.find(i=>i.CODE===invSplitState.invCode);
+  if(!inv) return;
+  const pay=inv.PAYMENTS[invSplitState.payIdx];
+  const newPayments=invSplitState.rows.map((r)=>({
+    CODE: r.payCode==='HAVALE' ? pay.CODE+'_HAV' : pay.CODE,
+    ISSUEDATE: pay.ISSUEDATE,
+    AMOUNT: Math.round(r.amount*100)/100,
+    PAYMENTFORM: Object.assign({},INV_PAYMENT_TYPES[r.payCode])
+  }));
+  inv.PAYMENTS.splice(invSplitState.payIdx,1,...newPayments);
+  invEdited.add(inv.CODE);
+  invSplitState=null;
+  applyInv();
+  openInvModal(inv);
+}
+
+// ===== SPLIT - TAHSİLAT =====
+let colSplitState=null; // {colCode, rows:[{amount,payCode}]}
+
+function renderColSplit(colCode){
+  const col=allCol.find(c=>c.CODE===colCode);
+  if(!col) return;
+  const total=col.AMOUNT||0;
+  colSplitState={colCode,rows:[{amount:'',payCode:col.PAYMENTFORM?.CODE||'VADETAH'},{amount:'',payCode:col.PAYMENTFORM?.CODE||'VADETAH'}]};
+  _renderColSplitUI(total);
+}
+
+function _renderColSplitUI(total){
+  const area=document.getElementById('colSplitArea');
+  if(!area||!colSplitState) return;
+  let sec=area.querySelector('.split-section');
+  if(!sec){sec=document.createElement('div');sec.className='split-section';area.appendChild(sec);}
+  sec.innerHTML=`<h5>✂ Tahsilat Parçalama — Orijinal: ${total.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</h5>`;
+  colSplitState.rows.forEach((row,i)=>{
+    const div=document.createElement('div'); div.className='split-row';
+    const numInput=document.createElement('input'); numInput.type='number'; numInput.step='0.01'; numInput.min='0.01';
+    numInput.value=row.amount; numInput.placeholder='Tutar';
+    numInput.oninput=e=>{colSplitState.rows[i].amount=e.target.value; updateColSplitInfo(total);};
+    const sel=document.createElement('select');
+    [{code:'VADETAH',desc:'Vadeli Tahsilat'},{code:'VADETAHHAV',desc:'Vadeli Tahsilat Havale'}].forEach(t=>{
+      const o=document.createElement('option'); o.value=t.code; o.textContent=t.desc;
+      if(t.code===row.payCode) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.onchange=e=>{colSplitState.rows[i].payCode=e.target.value;};
+    const removeBtn=document.createElement('button'); removeBtn.className='btn-remove'; removeBtn.textContent='✕';
+    removeBtn.onclick=()=>{if(colSplitState.rows.length<=2) return; colSplitState.rows.splice(i,1); _renderColSplitUI(total);};
+    div.appendChild(numInput); div.appendChild(sel); div.appendChild(removeBtn);
+    sec.appendChild(div);
+  });
+  const info=document.createElement('div'); info.id='colSplitInfo'; info.className='split-total-info';
+  const saveBtn=document.createElement('button'); saveBtn.id='colSplitSave'; saveBtn.className='btn btn-success'; saveBtn.style.cssText='font-size:12px;padding:5px 14px;';
+  saveBtn.textContent='Kaydet';
+  saveBtn.onclick=()=>saveColSplit();
+  const actions=document.createElement('div'); actions.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+  actions.appendChild(info); actions.appendChild(saveBtn);
+  sec.appendChild(actions);
+  updateColSplitInfo(total);
+}
+
+function updateColSplitInfo(total){
+  const info=document.getElementById('colSplitInfo');
+  const saveBtn=document.getElementById('colSplitSave');
+  if(!info||!saveBtn) return;
+  const sumRows=colSplitState.rows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const ok=Math.abs(sumRows-total)<0.01;
+  info.className='split-total-info '+(ok?'split-total-ok':'split-total-err');
+  info.textContent='Toplam: '+sumRows.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺ / '+total.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(ok?' ✓':' — fark: '+(sumRows-total).toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺');
+  saveBtn.disabled=!ok;
+}
+
+function saveColSplit(){
+  if(!colSplitState) return;
+  const col=allCol.find(c=>c.CODE===colSplitState.colCode);
+  if(!col) return;
+  const idx=allCol.indexOf(col);
+  const newCols=colSplitState.rows.map((r)=>(Object.assign({},col,{
+    CODE: r.payCode==='VADETAHHAV' ? col.CODE+'_HAV' : col.CODE,
+    AMOUNT: Math.round(r.amount*100)/100,
+    PAYMENTFORM: Object.assign({},COL_PAYMENT_TYPES[r.payCode])
+  })));
+  allCol.splice(idx,1,...newCols);
+  newCols.forEach(c=>colEdited.add(c.CODE));
+  colSplitState=null;
+  applyCol();
+  document.getElementById('colModal').classList.remove('open');
+}
+
+// ===== MERGE =====
+function showMerge(){document.getElementById('landing').style.display='none';document.getElementById('mergePanel').classList.add('visible');}
+function hideMerge(){document.getElementById('mergePanel').classList.remove('visible');document.getElementById('landing').style.display='flex';}
+
+const mergeFileInput=document.getElementById('mergeFileInput');
+mergeFileInput.addEventListener('change',e=>addMergeFiles(e.target.files));
+const mergeDropzone=document.getElementById('mergeDropzone');
+mergeDropzone.addEventListener('dragover',e=>{e.preventDefault();mergeDropzone.classList.add('drag-over');});
+mergeDropzone.addEventListener('dragleave',()=>mergeDropzone.classList.remove('drag-over'));
+mergeDropzone.addEventListener('drop',e=>{e.preventDefault();mergeDropzone.classList.remove('drag-over');addMergeFiles(e.dataTransfer.files);});
+
+function addMergeFiles(files){
+  let pending=files.length;
+  Array.from(files).forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{const d=JSON.parse(e.target.result);mergeFiles.push({name:file.name,data:d});}
+      catch(err){alert(file.name+' okunamadı: '+err.message);}
+      pending--; if(pending===0) renderMergeList();
+    };
+    r.readAsText(file);
+  });
+}
+
+function renderMergeList(){
+  const list=document.getElementById('mergeFileList');
+  list.innerHTML='';
+  mergeFiles.forEach((f,idx)=>{
+    const ic=(f.data.INVOICES||[]).length, cc=(f.data.COLLECTIONS||[]).length;
+    const item=document.createElement('div'); item.className='merge-file-item';
+    item.innerHTML=`<span style="font-size:18px">📄</span><span class="merge-file-name">${f.name}</span><span class="merge-file-info">${ic} fatura · ${cc} tahsilat</span><button class="merge-file-remove" onclick="removeMergeFile(${idx})">✕</button>`;
+    list.appendChild(item);
+  });
+  const ti=mergeFiles.reduce((s,f)=>s+(f.data.INVOICES||[]).length,0);
+  const tc=mergeFiles.reduce((s,f)=>s+(f.data.COLLECTIONS||[]).length,0);
+  const sum=document.getElementById('mergeSummary');
+  sum.style.display=mergeFiles.length>0?'flex':'none';
+  document.getElementById('mFileCount').textContent=mergeFiles.length;
+  document.getElementById('mInvCount').textContent=ti;
+  document.getElementById('mColCount').textContent=tc;
+  document.getElementById('mergeDownloadBtn').disabled=mergeFiles.length<2;
+  mergeFileInput.value='';
+}
+
+function removeMergeFile(idx){mergeFiles.splice(idx,1);renderMergeList();}
+function mergeClear(){mergeFiles=[];document.getElementById('mergeFileName').value='';renderMergeList();}
+
+function mergeDownload(){
+  const allI=[],allC=[];
+  mergeFiles.forEach(f=>{(f.data.INVOICES||[]).forEach(i=>allI.push(i));(f.data.COLLECTIONS||[]).forEach(c=>allC.push(c));});
+  const customName=document.getElementById('mergeFileName').value.trim();
+  const label=customName || 'BIRLESTIRILMIS_'+allI.length+'FATURA_'+allC.length+'TAHSILAT';
+  dlJSON({INVOICES:allI,COLLECTIONS:allC,Id:"00000000-0000-0000-0000-000000000000",RowCount:allI.length,ModDate:new Date().toISOString()}, label);
+}
+
+// ===== RESET =====
+function resetApp(){
+  allInv=[];allCol=[];filtInv=[];filtCol=[];
+  invSel.clear();colSel.clear();
+  mergeFiles=[];loadedFileName='';
+  invPage=1;colPage=1;
+  document.getElementById('statsBar').classList.remove('visible');
+  document.getElementById('tabs').classList.remove('visible');
+  ['invToolbar','invTableWrap','colToolbar','colTableWrap'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  ['invBar','colBar'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  ['invCompare','colCompare'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  ['invPag','colPag'].forEach(id=>document.getElementById(id).innerHTML='');
+  ['invBody','colBody'].forEach(id=>document.getElementById(id).innerHTML='');
+  document.getElementById('invFPos').innerHTML='<option value="">Tüm Bölgeler</option>';
+  document.getElementById('colFPos').innerHTML='<option value="">Tüm Bölgeler</option>';
+  ['invSearch','colSearch'].forEach(id=>document.getElementById(id).value='');
+  ['invFStatus','invFType','colFPay'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mergePanel').classList.remove('visible');
+  document.getElementById('landing').style.display='flex';
+  fileInput.value='';
+  switchTab('inv');
+}
+</script>
+</body>
+</html>
