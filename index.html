@@ -602,7 +602,10 @@ function applyInv(){
     if(typeof va==='string'){va=va.toLocaleLowerCase('tr-TR');vb=vb.toLocaleLowerCase('tr-TR');}
     return va<vb?(invSortA?-1:1):va>vb?(invSortA?1:-1):0;
   });
-  invPage=1; renderInv(); renderPag('invPag',filtInv.length,invPage,p=>{invPage=p;renderInv();renderPag('invPag',filtInv.length,invPage,arguments.callee);});
+  invPage=1; renderInv(); renderInvPag();
+}
+function renderInvPag(){
+  renderPag('invPag',filtInv.length,invPage,p=>{invPage=p;renderInv();renderInvPag();window.scrollTo({top:0,behavior:'smooth'});});
 }
 function invSort(f){if(invSortF===f)invSortA=!invSortA;else{invSortF=f;invSortA=true;}applyInv();}
 
@@ -689,7 +692,10 @@ function applyCol(){
     if(typeof va==='string'){va=va.toLocaleLowerCase('tr-TR');vb=vb.toLocaleLowerCase('tr-TR');}
     return va<vb?(colSortA?-1:1):va>vb?(colSortA?1:-1):0;
   });
-  colPage=1; renderCol(); renderPag('colPag',filtCol.length,colPage,p=>{colPage=p;renderCol();renderPag('colPag',filtCol.length,colPage,arguments.callee);});
+  colPage=1; renderCol(); renderColPag();
+}
+function renderColPag(){
+  renderPag('colPag',filtCol.length,colPage,p=>{colPage=p;renderCol();renderColPag();window.scrollTo({top:0,behavior:'smooth'});});
 }
 function colSort(f){if(colSortF===f)colSortA=!colSortA;else{colSortF=f;colSortA=true;}applyCol();}
 
